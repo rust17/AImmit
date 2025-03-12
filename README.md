@@ -44,6 +44,7 @@ aimmit
 - `--auto-commit`: 是否自动执行 git commit 操作（默认为false）
 - `--ollama-url`: Ollama 服务 URL
 - `--model`: Ollama 模型名称（默认为qwen2.5:3b）
+- `--only-prompt`: 是否只显示prompt（默认为false）
 
 ### 示例
 
@@ -89,6 +90,9 @@ AImmit 生成的 commit message 遵循[约定式提交规范](https://www.conven
 - `build`: 构建系统或外部依赖变更
 - `ci`: CI配置变更
 - `chore`: 其他变更
+
+## 注意
+- 经测试，对于生成 commit message 的模型，请选择参数至少达到 4B，效果才比较好，推荐使用 `tavernari/git-commit-message:latest` 或者把 `prompt` 打印出来用在线大模型服务生成
 
 ## 许可证
 

@@ -19,6 +19,7 @@ func main() {
 	autoCommit := flag.Bool("auto-commit", false, "是否自动执行git commit")
 	ollamaURL := flag.String("ollama-url", "", "Ollama服务URL")
 	modelName := flag.String("model", "qwen2.5:3b", "Ollama模型名称")
+	onlyPrompt := flag.Bool("only-prompt", false, "只显示prompt")
 	flag.Parse()
 
 	// 创建Git客户端
@@ -32,11 +33,11 @@ func main() {
 	summarizerClient := summarizer.NewClient()
 
 	// 生成commit message模式
-	generateCommitMessage(gitClient, aiClient, summarizerClient, *format, *stagedOnly, *autoCommit)
+	generateCommitMessage(gitClient, aiClient, summarizerClient, *format, *stagedOnly, *autoCommit, *onlyPrompt)
 }
 
 // generateCommitMessage 生成commit message
-func generateCommitMessage(gitClient *git.Client, aiClient *ai.Client, summarizerClient *summarizer.Client, format string, stagedOnly, autoCommit bool) {
+func generateCommitMessage(gitClient *git.Client, aiClient *ai.Client, summarizerClient *summarizer.Client, format string, stagedOnly, autoCommit, onlyPrompt bool) {
 	// 获取当前差异
 	diffInfo, err := gitClient.GetCurrentDiff(stagedOnly)
 	if err != nil {
@@ -51,7 +52,7 @@ func generateCommitMessage(gitClient *git.Client, aiClient *ai.Client, summarize
 	}
 
 	// 调用AI服务生成commit message
-	commitMsg, err := aiClient.GenerateCommitMessage(diffInfo)
+	commitMsg, err := aiClient.GenerateCommitMessage(diffInfo, onlyPrompt)
 	if err != nil {
 		fmt.Printf("生成commit message失败: %v\n", err)
 		os.Exit(1)

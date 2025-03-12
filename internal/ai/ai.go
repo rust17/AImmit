@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/rust17/AImmit/internal/git"
@@ -66,7 +67,7 @@ type ollamaResponse struct {
 }
 
 // callOllama 调用Ollama API
-func (c *Client) callOllama(prompt string) (string, error) {
+func (c *Client) callOllama(prompt string, onlyPrompt bool) (string, error) {
 	// 使用Client中配置的Ollama服务地址
 	url := c.ollamaURL + "/api/chat"
 
@@ -83,6 +84,11 @@ func (c *Client) callOllama(prompt string) (string, error) {
 			},
 		},
 		Stream: false, // 不使用流式响应
+	}
+
+	if onlyPrompt {
+		fmt.Println(reqBody.Messages)
+		os.Exit(1)
 	}
 
 	reqJSON, err := json.Marshal(reqBody)
@@ -117,12 +123,12 @@ func (c *Client) callOllama(prompt string) (string, error) {
 }
 
 // GenerateCommitMessage 根据diff生成commit message
-func (c *Client) GenerateCommitMessage(diffInfo *git.DiffInfo) (*CommitMessage, error) {
+func (c *Client) GenerateCommitMessage(diffInfo *git.DiffInfo, onlyPrompt bool) (*CommitMessage, error) {
 	// 构建提示信息
 	prompt := buildDiffPrompt(diffInfo)
 
 	// 调用Ollama API
-	response, err := c.callOllama(prompt)
+	response, err := c.callOllama(prompt, onlyPrompt)
 	if err != nil {
 		return nil, err
 	}
