@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/rust17/Almmit/internal/git"
+	"github.com/rust17/AImmit/internal/git"
 )
 
 // Client 是AI服务的客户端

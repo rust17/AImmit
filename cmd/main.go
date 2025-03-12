@@ -6,9 +6,9 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/rust17/Almmit/internal/ai"
-	"github.com/rust17/Almmit/internal/git"
-	"github.com/rust17/Almmit/internal/summarizer"
+	"github.com/rust17/AImmit/internal/ai"
+	"github.com/rust17/AImmit/internal/git"
+	"github.com/rust17/AImmit/internal/summarizer"
 )
 
 func main() {

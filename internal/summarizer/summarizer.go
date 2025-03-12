@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rust17/Almmit/internal/ai"
+	"github.com/rust17/AImmit/internal/ai"
 )
 
 // Client 是总结格式化的客户端

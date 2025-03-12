@@ -1,3 +1,3 @@
-module github.com/rust17/Almmit
+module github.com/rust17/AImmit
 
 go 1.20
