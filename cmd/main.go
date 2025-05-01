@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/rust17/AImmit/internal/ai"
 	"github.com/rust17/AImmit/internal/git"
@@ -13,24 +14,31 @@ import (
 
 func main() {
 	// 定义命令行参数
-	format := flag.String("format", "text", "输出格式 (text, json, conventional)")
+	format := flag.String("format", "conventional", "输出格式 (text, json, conventional)")
 	repoPath := flag.String("repo", ".", "Git仓库路径")
 	stagedOnly := flag.Bool("staged", true, "是否只分析已暂存的更改")
 	autoCommit := flag.Bool("auto-commit", false, "是否自动执行git commit")
-	ollamaURL := flag.String("ollama-url", "", "Ollama服务URL")
-	modelName := flag.String("model", "qwen2.5:3b", "Ollama模型名称")
+	enableDebug := flag.Bool("debug", false, "是否开启debug模式")
 	onlyPrompt := flag.Bool("only-prompt", false, "只显示prompt")
+	llamaCPath := flag.String("llama-c-path", "/home/circle/Downloads/llama.cpp/bin", "llama.cpp项目路径")
 	flag.Parse()
 
 	// 创建Git客户端
 	gitClient := git.NewClient(*repoPath)
 
 	// 创建AI客户端
-	aiClient := ai.NewClient(*ollamaURL)
-	aiClient.SetModel(*modelName)
+	aiClient := ai.NewClient(*enableDebug)
+	aiClient.SetLlamaCppPath(*llamaCPath)
 
 	// 创建Summarizer客户端
 	summarizerClient := summarizer.NewClient()
+
+	if *enableDebug {
+		startTime := time.Now()
+		defer func() {
+			fmt.Printf("执行时间: %v\n", time.Since(startTime))
+		}()
+	}
 
 	// 生成commit message模式
 	generateCommitMessage(gitClient, aiClient, summarizerClient, *format, *stagedOnly, *autoCommit, *onlyPrompt)

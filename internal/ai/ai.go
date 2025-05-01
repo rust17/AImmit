@@ -1,39 +1,72 @@
 package ai
 
 import (
-	"bytes"
+	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/rust17/AImmit/internal/git"
+	"github.com/rust17/AImmit/internal/utils"
 )
 
 // Client 是AI服务的客户端
 type Client struct {
-	ollamaURL string
-	modelName string
+	debug        bool    // 是否开启debug模式
+	modelPath    string  // llama.cpp模型文件路径
+	modelName    string  // 模型名称
+	llamaCppPath string  // llama.cpp可执行文件路径
+	temperature  float64 // 生成温度
+	maxTokens    int     // 最大生成的token数
+	topP         float64 // top-p
+	topK         int     // top-k
+	minP         float64 // min-p
 }
 
 // NewClient 创建一个新的AI客户端
-// 参数可以是Ollama服务的URL，如果为空则使用默认值
-func NewClient(ollamaURL string) *Client {
-	// 如果未提供URL，使用默认的本地Ollama地址
-	if ollamaURL == "" {
-		ollamaURL = "http://localhost:11434"
-	}
+// 参数是模型文件路径，如果为空则尝试使用默认路径
+func NewClient(debug bool) *Client {
+	modelPath := filepath.Join(utils.GetProjectRoot(), "model/Qwen3-1.7B-Q6_K.gguf")
 
 	return &Client{
-		ollamaURL: ollamaURL,
-		modelName: "llama3", // 默认使用llama3模型，可以根据需要修改
+		debug:     debug,
+		modelPath: modelPath,
+		modelName: "Qwen3", // 默认使用Qwen3模型
+		maxTokens: 2048,
+		topP:      0.8,
+		topK:      20,
+		minP:      0,
 	}
 }
 
-// SetModel 设置要使用的Ollama模型
-func (c *Client) SetModel(modelName string) {
+// SetModel 设置要使用的模型路径
+func (c *Client) SetModel(modelPath string) {
+	c.modelPath = modelPath
+}
+
+// SetModelName 设置模型名称
+func (c *Client) SetModelName(modelName string) {
 	c.modelName = modelName
+}
+
+// SetLlamaCppPath 设置llama.cpp可执行文件路径
+func (c *Client) SetLlamaCppPath(path string) {
+	c.llamaCppPath = path
+}
+
+// SetTemperature 设置生成温度
+func (c *Client) SetTemperature(temp float64) {
+	c.temperature = temp
+}
+
+// SetMaxTokens 设置最大生成的token数
+func (c *Client) SetMaxTokens(tokens int) {
+	c.maxTokens = tokens
 }
 
 // CommitMessage 表示生成的提交信息
@@ -46,80 +79,88 @@ type CommitMessage struct {
 	RawDiff         string `json:"-"`                // 原始diff内容（不包含在JSON输出中）
 }
 
-// Ollama API请求结构
-type ollamaRequest struct {
-	Model    string    `json:"model"`
-	Messages []message `json:"messages"`
-	Stream   bool      `json:"stream"`
-}
+// callLlamaCpp 调用llama.cpp可执行文件生成回复
+func (c *Client) callLlamaCpp(prompt string, onlyPrompt bool) (string, error) {
+	// 终止标记（可以自定义）
+	stopMarker := "<|end_of_text|>"
+	// 添加系统提示到用户提示之前
+	fullPrompt := fmt.Sprintf("<|im_start|>system\n你是一个专业的代码提交分析助手，擅长总结Git提交历史和生成规范的commit message。可以拼接技术术语英文，不过请尽可能用中文回答。请以字符%s结束/no_think<|im_end|>\n<|im_start|>user\n%s<|im_end|>\n<|im_start|>assistant\n", stopMarker, prompt)
+	// 超时时间
+	timeout := 2 * time.Minute
 
-type message struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
-// Ollama API响应结构
-type ollamaResponse struct {
-	Message struct {
-		Content string `json:"content"`
-	} `json:"message"`
-	Error string `json:"error,omitempty"`
-}
-
-// callOllama 调用Ollama API
-func (c *Client) callOllama(prompt string, onlyPrompt bool) (string, error) {
-	// 使用Client中配置的Ollama服务地址
-	url := c.ollamaURL + "/api/chat"
-
-	reqBody := ollamaRequest{
-		Model: c.modelName,
-		Messages: []message{
-			{
-				Role:    "system",
-				Content: "你是一个专业的代码提交分析助手，擅长总结Git提交历史和生成规范的commit message。",
-			},
-			{
-				Role:    "user",
-				Content: prompt,
-			},
-		},
-		Stream: false, // 不使用流式响应
+	// 如果只是打印提示信息，则输出并退出
+	if onlyPrompt || c.debug {
+		fmt.Println(fullPrompt)
+		if onlyPrompt {
+			os.Exit(1)
+		}
 	}
 
-	if onlyPrompt {
-		fmt.Println(reqBody.Messages)
-		os.Exit(1)
-	}
+	// 创建带超时的上下文
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
 
-	reqJSON, err := json.Marshal(reqBody)
+	// 构建llama.cpp命令行参数
+	cmd := exec.CommandContext(
+		ctx,
+		c.llamaCppPath+"/llama-cli",
+		"-m", c.modelPath,
+		"-p", fullPrompt,
+		"--no-display-prompt",
+		"--n-predict", fmt.Sprintf("%d", c.maxTokens),
+		// Qwen3-1.7B-Q6_K.gguf 模型最佳参数
+		"--min-p", fmt.Sprintf("%.2f", c.minP),
+		"--temp", fmt.Sprintf("%.2f", c.temperature),
+		"--top-p", fmt.Sprintf("%.2f", c.topP),
+		"--top-k", fmt.Sprintf("%d", c.topK),
+	)
+	cmd.Env = append(os.Environ(), "LD_LIBRARY_PATH="+c.llamaCppPath)
+
+	// 创建管道获取实时输出
+	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
-		return "", fmt.Errorf("序列化请求失败: %w", err)
+		return "", fmt.Errorf("创建输出管道失败: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(reqJSON))
-	if err != nil {
-		return "", fmt.Errorf("创建HTTP请求失败: %w", err)
+	if err := cmd.Start(); err != nil {
+		return "", fmt.Errorf("启动llama.cpp失败: %w", err)
 	}
 
-	req.Header.Set("Content-Type", "application/json")
+	// 用于存储完整输出
+	var outputBuilder strings.Builder
+	// 使用扫描器来实时读取输出
+	scanner := bufio.NewScanner(stdoutPipe)
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("发送HTTP请求失败: %w", err)
+	// 启动goroutine来处理输出
+	go func() {
+		for scanner.Scan() {
+			select {
+			case <-ctx.Done():
+				// 上下文被取消，立即退出
+				return
+			default:
+				line := scanner.Text()
+				outputBuilder.WriteString(line + "\n")
+
+				if c.debug {
+					fmt.Println(line) // debug 实时打印输出
+				}
+
+				if strings.Contains(line, stopMarker) {
+					cmd.Process.Kill()
+					return
+				}
+			}
+		}
+	}()
+
+	// 确保进程已结束
+	err = cmd.Wait()
+	if err != nil && ctx.Err() == context.DeadlineExceeded {
+		return outputBuilder.String(), fmt.Errorf("执行llama.cpp超时")
 	}
-	defer resp.Body.Close()
 
-	var ollamaResp ollamaResponse
-	if err := json.NewDecoder(resp.Body).Decode(&ollamaResp); err != nil {
-		return "", fmt.Errorf("解析API响应失败: %w", err)
-	}
-
-	if ollamaResp.Error != "" {
-		return "", fmt.Errorf("API错误: %s", ollamaResp.Error)
-	}
-
-	return ollamaResp.Message.Content, nil
+	return outputBuilder.String(), nil
 }
 
 // GenerateCommitMessage 根据diff生成commit message
@@ -127,10 +168,13 @@ func (c *Client) GenerateCommitMessage(diffInfo *git.DiffInfo, onlyPrompt bool) 
 	// 构建提示信息
 	prompt := buildDiffPrompt(diffInfo)
 
-	// 调用Ollama API
-	response, err := c.callOllama(prompt, onlyPrompt)
+	// 调用llama.cpp
+	response, err := c.callLlamaCpp(prompt, onlyPrompt)
 	if err != nil {
 		return nil, err
+	}
+	if c.debug {
+		fmt.Println(response) // debug 响应
 	}
 
 	// 解析AI响应
@@ -157,7 +201,7 @@ func buildDiffPrompt(diffInfo *git.DiffInfo) string {
 	sb.WriteString(fmt.Sprintf("删除行数: %d\n", diffInfo.Deletions))
 
 	// 最大允许的diff内容长度
-	const maxDiffLength = 6000
+	const maxDiffLength = 30000
 
 	// 如果diff内容不太长，则包含完整diff
 	if len(diffInfo.RawDiff) <= maxDiffLength {
