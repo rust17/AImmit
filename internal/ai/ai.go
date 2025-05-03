@@ -7,12 +7,10 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/rust17/AImmit/internal/git"
-	"github.com/rust17/AImmit/internal/utils"
 )
 
 // Client 是AI服务的客户端
@@ -31,11 +29,8 @@ type Client struct {
 // NewClient 创建一个新的AI客户端
 // 参数是模型文件路径，如果为空则尝试使用默认路径
 func NewClient(debug bool) *Client {
-	modelPath := filepath.Join(utils.GetProjectRoot(), "model/Qwen3-1.7B-Q6_K.gguf")
-
 	return &Client{
 		debug:     debug,
-		modelPath: modelPath,
 		modelName: "Qwen3", // 默认使用Qwen3模型
 		maxTokens: 2048,
 		topP:      0.8,

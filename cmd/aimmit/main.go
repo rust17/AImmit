@@ -23,6 +23,7 @@ func main() {
 	enableDebug := flag.Bool("debug", false, "是否开启debug模式")
 	onlyPrompt := flag.Bool("only-prompt", false, "只显示prompt")
 	llamaCPath := flag.String("llama-c-path", filepath.Join(utils.GetProjectRoot(), "./llama-c-path"), "llama.cpp项目路径")
+	modelPath := flag.String("model-path", filepath.Join(utils.GetProjectRoot(), "model/Qwen3-1.7B-Q6_K.gguf"), "模型路径")
 	flag.Parse()
 
 	// 从环境变量获取参数
@@ -45,6 +46,7 @@ func main() {
 	// 创建AI客户端
 	aiClient := ai.NewClient(*enableDebug)
 	aiClient.SetLlamaCppPath(*llamaCPath)
+	aiClient.SetModel(*modelPath)
 
 	// 创建Summarizer客户端
 	summarizerClient := summarizer.NewClient()
