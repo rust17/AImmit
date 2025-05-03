@@ -29,7 +29,7 @@ go install github.com/rust17/AImmit/cmd/aimmit@latest
 ```bash
 git clone https://github.com/rust17/AImmit.git
 cd AImmit
-go build -o aimmit ./cmd/main.go
+go build -o aimmit ./cmd/aimmit
 ```
 
 ### 下载 llama.cpp
@@ -79,7 +79,7 @@ docker run -v $(pwd)/model:/app/model -v $(pwd):/git-repo -it aimmit
 - `--staged`: 是否只分析已暂存的更改（默认为true，只分析已暂存的更改）
 - `--auto-commit`: 是否自动执行 git commit 操作（默认为false）
 - `--model-path`: llama.cpp模型文件路径，例如：`/home/user/models/llama3.gguf`
-- `--llama-c-path`: llama.cpp可执行文件路径（默认为llama-main）
+- `--llama-c-path`: llama.cpp可执行文件路径（默认为 your-AImmit-path/llama-c-path）
 - `--only-prompt`: 是否只显示prompt（默认为false）
 
 ### 示例
