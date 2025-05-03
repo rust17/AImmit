@@ -16,6 +16,8 @@ AI + Commit，发音类似"Aim it"，意为"瞄准它"，比喻精准总结
 
 ## 安装
 
+### 方法一
+
 确保您已安装 Go 1.20 或更高版本，然后运行：
 
 ```bash
@@ -27,10 +29,23 @@ go install github.com/rust17/AImmit/cmd/aimmit@latest
 ```bash
 git clone https://github.com/rust17/AImmit.git
 cd AImmit
-go build -o aimmit ./cmd/aimmit
+go build -o aimmit ./cmd/main.go
 ```
 
-### Docker 支持
+### 下载 llama.cpp
+由于这个项目依赖 llama.cpp 调用大模型，所以需要下载 llama.cpp 的二进制文件，并放入 `./llama-c-path/bin` 目录下。
+
+```bash
+wget -q https://github.com/ggml-org/llama.cpp/releases/download/{llama-bin.zip} -O temp.zip && unzip temp.zip -d ./temp && mv ./temp/build/bin/* ./llama-c-path/ && rm -rf temp && rm temp.zip
+```
+
+### 下载 GGUF 模型
+
+```bash
+wget https://huggingface.co/lmstudio-community/Qwen3-1.7B-GGUF/resolve/main/Qwen3-1.7B-Q6_K.gguf -O ./model/Qwen3-1.7B-Q6_K.gguf
+```
+
+### 方法二（Docker 构建）
 
 AImmit 也支持通过 Docker 进行构建和运行：
 
@@ -39,9 +54,8 @@ AImmit 也支持通过 Docker 进行构建和运行：
 git clone https://github.com/rust17/AImmit.git
 cd AImmit
 
-# 创建models目录并放入GGUF模型文件
-mkdir -p model
 # 将你的GGUF模型文件放入models目录
+wget https://huggingface.co/lmstudio-community/Qwen3-1.7B-GGUF/resolve/main/Qwen3-1.7B-Q6_K.gguf -O ./model/Qwen3-1.7B-Q6_K.gguf
 
 # 构建Docker镜像
 docker build -t aimmit:latest .
@@ -50,9 +64,13 @@ docker build -t aimmit:latest .
 ## 使用方法
 
 ### 生成 Commit Message（默认模式）
-
+直接运行
 ```bash
 aimmit
+```
+或者用 Docker 运行，需要将模型文件放入 `./model` 目录下，并挂载当前目录为 git-repo：
+```bash
+docker run -v $(pwd)/model:/app/model -v $(pwd):/git-repo -it aimmit
 ```
 
 ### 命令行参数

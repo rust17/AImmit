@@ -20,7 +20,7 @@ func main() {
 	autoCommit := flag.Bool("auto-commit", false, "是否自动执行git commit")
 	enableDebug := flag.Bool("debug", false, "是否开启debug模式")
 	onlyPrompt := flag.Bool("only-prompt", false, "只显示prompt")
-	llamaCPath := flag.String("llama-c-path", "/home/circle/Downloads/llama.cpp/bin", "llama.cpp项目路径")
+	llamaCPath := flag.String("llama-c-path", "./llama-c-path", "llama.cpp项目路径")
 	flag.Parse()
 
 	// 从环境变量获取参数
