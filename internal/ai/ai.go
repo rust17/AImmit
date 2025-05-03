@@ -217,7 +217,7 @@ func buildDiffPrompt(diffInfo *git.DiffInfo) string {
 	sb.WriteString(fmt.Sprintf("删除行数: %d\n", diffInfo.Deletions))
 
 	// 最大允许的diff内容长度
-	const maxDiffLength = 30000
+	const maxDiffLength = 3000
 
 	// 如果diff内容不太长，则包含完整diff
 	if len(diffInfo.RawDiff) <= maxDiffLength {

@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
 	"github.com/rust17/AImmit/internal/ai"
 	"github.com/rust17/AImmit/internal/git"
 	"github.com/rust17/AImmit/internal/summarizer"
+	"github.com/rust17/AImmit/internal/utils"
 )
 
 func main() {
@@ -20,7 +22,7 @@ func main() {
 	autoCommit := flag.Bool("auto-commit", false, "是否自动执行git commit")
 	enableDebug := flag.Bool("debug", false, "是否开启debug模式")
 	onlyPrompt := flag.Bool("only-prompt", false, "只显示prompt")
-	llamaCPath := flag.String("llama-c-path", "./llama-c-path", "llama.cpp项目路径")
+	llamaCPath := flag.String("llama-c-path", filepath.Join(utils.GetProjectRoot(), "./llama-c-path"), "llama.cpp项目路径")
 	flag.Parse()
 
 	// 从环境变量获取参数
