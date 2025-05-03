@@ -23,6 +23,20 @@ func main() {
 	llamaCPath := flag.String("llama-c-path", "/home/circle/Downloads/llama.cpp/bin", "llama.cpp项目路径")
 	flag.Parse()
 
+	// 从环境变量获取参数
+	formatEnv := os.Getenv("FORMAT")
+	if formatEnv != "" {
+		format = &formatEnv
+	}
+	repoPathEnv := os.Getenv("REPO")
+	if repoPathEnv != "" {
+		repoPath = &repoPathEnv
+	}
+	llamaCPathEnv := os.Getenv("LLAMA_C_PATH")
+	if llamaCPathEnv != "" {
+		llamaCPath = &llamaCPathEnv
+	}
+
 	// 创建Git客户端
 	gitClient := git.NewClient(*repoPath)
 

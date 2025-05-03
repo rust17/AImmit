@@ -4,7 +4,7 @@ AImmit 是一个用 Go 开发的命令行 AI 工具，用于根据代码变更�
 
 ## 命名由来
 
-AI + Commit，发音类似“Aim it”，意为“瞄准它”，比喻精准总结
+AI + Commit，发音类似"Aim it"，意为"瞄准它"，比喻精准总结
 
 ## 功能特点
 
@@ -12,6 +12,7 @@ AI + Commit，发音类似“Aim it”，意为“瞄准它”，比喻精准总
 - **多种输出格式**：支持文本、JSON 和约定式提交格式
 - **自动提交**：可选择自动执行 git commit 操作
 - **简单易用**：友好的命令行界面
+- **本地大模型**：使用llama.cpp本地调用大语言模型，无需联网，保护代码安全
 
 ## 安装
 
@@ -29,6 +30,23 @@ cd AImmit
 go build -o aimmit ./cmd/aimmit
 ```
 
+### Docker 支持
+
+AImmit 也支持通过 Docker 进行构建和运行：
+
+```bash
+# 克隆仓库
+git clone https://github.com/rust17/AImmit.git
+cd AImmit
+
+# 创建models目录并放入GGUF模型文件
+mkdir -p model
+# 将你的GGUF模型文件放入models目录
+
+# 构建Docker镜像
+docker build -t aimmit:latest .
+```
+
 ## 使用方法
 
 ### 生成 Commit Message（默认模式）
@@ -42,8 +60,8 @@ aimmit
 - `--repo`: Git 仓库路径（默认为当前目录）
 - `--staged`: 是否只分析已暂存的更改（默认为true，只分析已暂存的更改）
 - `--auto-commit`: 是否自动执行 git commit 操作（默认为false）
-- `--ollama-url`: Ollama 服务 URL
-- `--model`: Ollama 模型名称（默认为qwen2.5:3b）
+- `--model-path`: llama.cpp模型文件路径，例如：`/home/user/models/llama3.gguf`
+- `--llama-c-path`: llama.cpp可执行文件路径（默认为llama-main）
 - `--only-prompt`: 是否只显示prompt（默认为false）
 
 ### 示例
@@ -90,9 +108,6 @@ AImmit 生成的 commit message 遵循[约定式提交规范](https://www.conven
 - `build`: 构建系统或外部依赖变更
 - `ci`: CI配置变更
 - `chore`: 其他变更
-
-## 注意
-- 经测试，对于生成 commit message 的模型，请选择参数至少达到 4B，效果才比较好，推荐使用 `tavernari/git-commit-message:latest` 或者把 `prompt` 打印出来用在线大模型服务生成
 
 ## 许可证
 

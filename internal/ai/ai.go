@@ -122,6 +122,22 @@ func (c *Client) callLlamaCpp(prompt string, onlyPrompt bool) (string, error) {
 		return "", fmt.Errorf("创建输出管道失败: %w", err)
 	}
 
+	if c.debug {
+		// 创建管道获取实时错误输出
+		stderrPipe, err := cmd.StderrPipe()
+		if err != nil {
+			return "", fmt.Errorf("创建错误输出管道失败: %w", err)
+		}
+
+		// 启动goroutine来处理错误输出
+		go func() {
+			scanner := bufio.NewScanner(stderrPipe)
+			for scanner.Scan() {
+				fmt.Println(scanner.Text())
+			}
+		}()
+	}
+
 	if err := cmd.Start(); err != nil {
 		return "", fmt.Errorf("启动llama.cpp失败: %w", err)
 	}
